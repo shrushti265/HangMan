@@ -16,14 +16,17 @@ function App() {
     letter => !wordToGuess.includes(letter)
   )
 
-  
+  const isLoser = incorrectLetter.length >= 6
+  const isWinner = wordToGuess.split("").every(letter => guessedLetter.includes(letter))
 
-  const addGuessedLetter = useCallback((letter: string) => {
-     
-      if (guessedLetter.includes(letter)) return 
+  const addGuessedLetter = useCallback(
+    (letter: string) => {
+      if (guessedLetter.includes(letter) || isLoser || isWinner) 
+      return 
 
       setGuessedLetter(currentLetter => [...currentLetter, letter])
-  }, [guessedLetter])
+  }, [guessedLetter, isLoser, isWinner]
+  )
 
 
   useEffect(() => {
@@ -41,6 +44,22 @@ function App() {
     }
   }, [guessedLetter])
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const key = e.key
+       if (key !== "Enter") return 
+
+      e.preventDefault()
+      setGuessedLetter([])
+      setWordToGuess(getWord())
+    }
+    document.addEventListener("keypress", handler)
+
+    return () => {
+      document.removeEventListener("keypress", handler)
+    }
+  })
+
   return (
     <div 
     style={{ 
@@ -55,13 +74,17 @@ function App() {
         <div style={{
           fontSize: "2rem",
           textAlign: "center"
-        }}>Lose win
+        }}>
+          {isWinner && "winner! - Refresh to try again"}
+          {isLoser && "Nice Try! - Refresh to try again"}
         </div>
         <div>
           <HangmanDrawing numberOfGuesses={incorrectLetter.length}/>
-          <HangmanWord wordToGuess={wordToGuess} guessedLetter={guessedLetter}/>
+          <HangmanWord reveal={isLoser} wordToGuess={wordToGuess} guessedLetter={guessedLetter}/>
           <div style={{ alignSelf: "stretch" }}>
-            <Keyboard activeLetter={guessedLetter.filter(letter => {
+            <Keyboard 
+            disabled = {isWinner || isLoser}
+            activeLetter={guessedLetter.filter(letter => {
               wordToGuess.includes(letter)
             })}
             inactiveLetter={incorrectLetter}
